@@ -2,7 +2,7 @@
 title: Offline-Tsds-Selector
 createTime: 2025/11/01 21:36:21
 permalink: /en/guide/im5q9cd2/
-icon: tdesign:cat
+icon: carbon:select-02
 ---
 
 

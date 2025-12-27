@@ -2,7 +2,7 @@
 title: Offline-Near-Selector
 createTime: 2025/11/27 16:02:41
 permalink: /en/guide/7k0w3d92/
-icon: flowbite:fish-alt-outline
+icon: carbon:select-02
 ---
 # Offline NEAR Selector 
 

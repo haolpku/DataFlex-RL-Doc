@@ -1,7 +1,7 @@
 ---
 title: ODM Data Mixer
 createTime: 2025/01/27 10:00:00
-icon: material-symbols:casino
+icon: material-symbols:balance
 permalink: /en/guide/mixer/odm/
 ---
 

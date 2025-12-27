@@ -2,7 +2,7 @@
 title: Offline-Near数据选择器
 createTime: 2025/11/26 23:42:41
 permalink: /zh/guide/acgesu99/
-icon: flowbite:fish-alt-outline
+icon: carbon:select-02
 ---
 # Offline NEAR Selector 使用介绍
 

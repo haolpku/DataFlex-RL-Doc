@@ -2,7 +2,7 @@
 title: Offline-Tsds 数据选择器
 createTime: 2025/11/01 21:35:45
 permalink: /zh/guide/vkqfowej/
-icon: tdesign:cat
+icon: carbon:select-02
 
 ---
 

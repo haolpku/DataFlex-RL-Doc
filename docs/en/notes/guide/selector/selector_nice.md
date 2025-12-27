@@ -2,7 +2,7 @@
 title: NICE Data Selector
 createTime: 2025/12/17 12:00:08
 permalink: /en/guide/nice/
-icon: carbon:select-02
+icon: carbon:select-window
 ---
 # NICE Selector Usage Guide
 

@@ -1,7 +1,7 @@
 ---
 title: ODM 数据混合器
 createTime: 2025/01/27 10:00:00
-icon: material-symbols:casino
+icon: material-symbols:balance
 permalink: /zh/guide/mixer/odm/
 ---
 
