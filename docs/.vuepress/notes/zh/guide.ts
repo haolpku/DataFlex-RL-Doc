@@ -30,7 +30,6 @@ export const Guide: ThemeNote = defineNoteConfig({
                 'selector_nice',
                 'selector_offline_tsds',
                 'selector_offline_near',
-                'selector_zeroth',
             ],
         },
         {
