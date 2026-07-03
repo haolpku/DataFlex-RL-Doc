@@ -15,16 +15,16 @@ import { plumeTheme } from 'vuepress-theme-plume'
 import { redirectPlugin } from '@vuepress/plugin-redirect'
 
 export default defineUserConfig({
-  base: '/DataFlex-Doc/', // 部署路径，建议使用 GitHub Pages 时设置为 /<repo_name>/
+  base: '/DataFlex-RL-Doc/', // 部署路径，建议使用 GitHub Pages 时设置为 /<repo_name>/
   lang: 'en-US',
   locales: {
     '/en/': {
-      title: 'DataFlex Documentation',
+      title: 'DataFlex-RL Documentation',
       lang: 'en-US',
       description: 'Documentation for modern data processing pipeline.',
     },
     '/zh/': {
-      title: 'DataFlex中文文档',
+      title: 'DataFlex-RL 中文文档',
       lang: 'zh-CN',
       description: 'Documentation for modern data processing pipeline.',
     },

@@ -1,132 +1,72 @@
 ---
-title: 向Dataflex添加Mixer
-createTime: 2025/06/30 19:19:16
-permalink: /zh/guide/mixer/tutorial/
+title: 添加 Mixer
 icon: solar:add-circle-outline
+createTime: 2026/07/03 10:00:00
+permalink: /zh/guide/mixer/tutorial/
 ---
 
-# 向Dataflex添加Mixer
+# 向 DataFlex-RL 添加 Mixer
 
-## Mix Trainer 详解
+Mixer 消费**per-domain 统计**,返回采样**配比**。与 Reweighter/Selector 不同,它不作用于当前
+batch —— 它调节未来采样。
 
-Mix Trainer 允许您在训练的特定阶段，根据模型的当前状态动态调整后续的领域数据配比。
+## 第 1 步:添加 Mixer
 
-### 参数配置
-
-当使用 Mix Trainer 时，需要在 `.yaml` 配置文件中添加以下 DataFlex 特定参数：
-
-```yaml
-train_type: dynamic_mix
-components_cfg_file: src/dataflex/configs/components.yaml
-component_name: random
-mixture_sample_rule: mixture     # 初始采样规则，mixture为根据init_mixture_proportions比例混合（可动态调整），
-                                 # stratified为固定按源数据集大小比例分层，uniform为固定均匀分布
-init_mixture_proportions: [0.7, 0.3]  # 对应初始的比例，如果mixture_sample_rule为mixture必须设置
-warmup_step: 4
-update_step: 3
-update_times: 2
-```
-
-### 参数详解
-
-- `train_type`: 定义训练类型。`dynamic_mix` 表示启用 Mix Trainer。
-- `component_name`: 定义数据选择的具体策略。例如，`random` 表示使用随机的领域配比器。
-- `components_cfg_file`: 定义策略的参数文件，包含对应策略的特定参数。
-- `mixture_sample_rule`: 初始采样规则，必选，`mixture` 为根据 `init_mixture_proportions` 比例混合（可动态调整），`stratified` 为固定按源数据集大小比例分层，`uniform` 为固定均匀分布。
-- `init_mixture_proportions`: 初始采样对应的比例，`mixture_sample_rule='mixture'` 时需要指定。
-- `warmup_step`: 在执行第一次动态配比更新前，模型需要先进行 `warmup_step` 步的常规训练。这有助于模型建立对数据分布的初步认知。
-- `update_step`: 领域配比更新的频率。每当训练进行 `update_step` 步后，Mixer 将被触发，更新领域配比用于下一阶段的训练。
-- `update_times`: 每个 Flex epoch 内动态数据配比计算的次数。总步数由 `num_train_epochs` 推导；若 `train_step > 0`，则以 `train_step` 为准。
-
-### 静态混合配置
-
-Mix Trainer 支持静态混合模式，通过设置 `static_mix: true` 来固定初始比例：
-
-```yaml
-train_type: dynamic_mix
-static_mix: true                      # 是否固定初始静态混合比例（仅在dynamic_mix训练器中生效）
-mixture_sample_rule: mixture          # 初始采样规则
-init_mixture_proportions: [0.7, 0.3]  # 对应初始的比例，可通过额外算法自行调整
-train_step: 3                         # 固定总步数；设为 0 时由 num_train_epochs 控制
-```
-
-启用静态混合后，训练过程中将使用固定的 `init_mixture_proportions` 比例，不再动态调整。
-
-## 如何在 DataFlex 中添加自定义 Mixer
-
-本文档将以 `random_mixer` 为例，详细介绍如何在 DataFlex 框架中添加并配置一个自定义的数据配比器，实现训练过程中的动态领域配比。
-
-### 步骤一：创建配比器实现文件
-
-首先，在项目指定路径下创建一个新的 Python 文件，用于实现自定义配比器的核心逻辑。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/train/mixer/random_mixer.py`
-2. **文件内容**: 在该文件中，定义一个继承自 `dataflex.train.mixer.base_mixer.Mixer` 的新类 `RandomMixer`。
+`act` 收到一个 `{域: 分数}` 字典(来自 trainer 的滑动窗口 tracker),返回与 `self.domains`
+对齐的配比向量。
 
 ```python
-from dataflex.core.registry import register_mixer
-from dataflex.utils.logging import logger
-from .base_mixer import Mixer
-
 import numpy as np
+from .core.actuator import Mixer
+from .core.registry import register_mixer
 
-@register_mixer("random")
-class RandomMixer(Mixer):
-    def __init__(self, mixture_manager, seed):
-        super().__init__(mixture_manager)
-        self.seed = seed
-    
-    def mix(self, model, step_id: int, **kwargs) -> np.ndarray:
-        """
-        随机生成一组比例向量。
+@register_mixer("reward_gap")
+class RewardGapMixer(Mixer):
+    """配比 ∝ softmax((max_reward − domain_reward) / T):偏向落后域。"""
+    def __init__(self, domains, temperature=1.0, floor=0.05, **kw):
+        super().__init__(**kw)
+        self.domains = list(domains); self.temperature = temperature; self.floor = floor
 
-        Returns:
-            np.ndarray: 长度为源数量的归一化比例数组。
-        """
-        k = len(self.mixture_manager.names)
-        np.random.seed(self.seed)
-        raw = np.random.random(k)
-        probs = raw / raw.sum()  # 归一化
-        logger.info(f"[RandomMixer] Step {step_id} Generated proportions: {probs}")
-
-        return probs
+    def act(self, scores, batch, **ctx) -> np.ndarray:
+        means = np.array([scores.get(d, 0.0) for d in self.domains])
+        z = (means.max() - means) / max(self.temperature, 1e-6)
+        z -= z.max()
+        p = np.exp(z); p /= p.sum()
+        p = np.maximum(p, self.floor)            # floor 防止饿死某个域
+        return p / p.sum()
 ```
 
-#### 关键点说明
+**bandit** 类 mixer(如 `dump_ucb`)的 `act` 还会通过 `ctx` 收到 `counts=`(每域访问次数)以加
+探索项。
 
-- `@register_mixer('random')`: 这是一个装饰器，用于将您的 `RandomMixer` 类注册到 DataFlex 框架中，并赋予其一个唯一的名称 `random`。这个名称将在后续的配置文件中使用。
-- `RandomMixer(Mixer)`: 您的自定义类必须继承自框架提供的 `Mixer` 基类。
-- `__init__`: 构造函数用于执行必要的初始化操作。调用 `super().__init__(...)` 来确保基类的初始化逻辑被正确执行。
-- `mix`: 这是实现数据配比算法的核心方法。您需要根据自己的需求重写此方法，需要返回长度为源数量的归一化比例数组。
+## 第 2 步:带 domain 列的数据
 
-### 步骤二：导入新模块
+保留真实 `data_source`(verl 的 reward 路由依赖它);域标签放单独列。mix trainer 读
+`config.dataflex.domain_key`(默认 `domain`)并给每个 prompt 打标签,供 replay buffer 按域分桶。
 
-为了让 DataFlex 框架能够识别并加载您新创建的配比器，需要编辑该目录下的 `__init__.py` 文件，以暴露您的新模块。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/train/mixer/__init__.py`
-2. **添加内容**: 在文件末尾添加以下行
-
-```python
-from .random_mixer import RandomMixer
-```
-
-### 步骤三：配置配比器参数
-
-最后，在 YAML 配置文件中定义您的新配比器及其参数，以便在实验中方便地调用。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/configs/components.yaml`
-2. **添加配置**: 在 `mixers` 配置块下，为您的 `random` 配比器添加新的条目。
+## 第 3 步:使用
 
 ```yaml
-mixers:
-  # ...
-  random:
-    name: random
-    params:
-      seed: 42
-  # ...
+trainer:
+  v1:
+    trainer_mode: dataflex_mix_sync
+    sampler:
+      custom_sampler: {path: pkg://dataflex_verl.replay_buffer, name: DataFlexMixReplayBuffer}
+dataflex:
+  mechanism: mix
+  domains: [math, code, logic]
+  scorer:   {name: reward_difficulty}
+  actuator: {name: reward_gap, params: {temperature: 1.0, floor: 0.05}}
+  warmup_step: 5
+  update_step: 5
 ```
 
-#### 关键点说明
+## 端到端流程
 
-- `params`: 该块下定义的所有参数都将作为关键字参数传递给 `RandomMixer` 类的 `__init__` 构造函数。例如，这里的 `seed` 值会传递给 `__init__` 方法的 `seed` 参数。
+1. `DataFlexMixSyncTrainer._add_batch_to_generate` 给每个 prompt 打域标签。
+2. reward/advantage 之后,`DomainStatsTracker` 在滑动窗口上累积每域平均信号。
+3. warmup 之后,每 `update_step` 步,`mixer.act(stats)` 产出新配比,写入共享状态。
+4. `DataFlexMixReplayBuffer.sample` 把可采样 prompt 按域分桶,按配比选择(最大余数取整,并有
+   oldest-first 兜底,保证不返回空 batch)。
+
+由于 Mix 只周期性更新且需要跨步统计,它是唯一保持"训一段 → 调整 → 继续"节奏的机制。

@@ -1,102 +1,80 @@
 ---
-title: Add Selector to Dataflex
-createTime: 2025/06/30 19:19:16
-permalink: /en/guide/selector/tutorial/
+title: Add a Selector
 icon: solar:add-circle-outline
+createTime: 2026/07/03 10:00:00
+permalink: /en/guide/selector/tutorial/
 ---
 
-# Add Selector to Dataflex
+# Add a Selector to DataFlex-RL
 
-This document will detail how to add and configure a custom data selector in the DataFlex framework, enabling dynamic sample selection during the training process, using `custom_selector` as an example.
-## Step 1: Create the Selector Implementation File
+A Selector turns a score into a list of kept indices. It reuses the same Scorer layer
+as Reweighters and Mixers.
 
-First, create a new Python file in the specified project path to implement the core logic of your custom selector.
+## Step 1: (optional) Add a group Scorer
 
-1. **File Path**: `DataFlex-Preview/src/dataflex/train/selector/custom_selector.py`
-2. **File Content**: In this file, define a new class `CustomSelector` that inherits from `dataflex.train.selector.base_selector.Selector`.
-
-```python
-from dataflex.core.registry import register_selector
-from .base_selector import logger, Selector
-
-@register_selector('custom')
-class CustomSelector(Selector):
-    """
-    An example implementation of a custom data selector.
-    """
-    def __init__(
-        self,
-        dataset,
-        accelerator,
-        data_collator,
-        cache_dir,
-    ):
-        """
-        Constructor for initializing the selector.
-        """
-        super().__init__(dataset, accelerator, data_collator, cache_dir)
-        logger.info(f"CustomSelector initialized.")
-
-    def select(self, model, step_id: int, num_samples: int, **kwargs):
-        """
-        The core selection logic.
-        This method defines how to select samples from the dataset.
-
-        Args:
-            model: The current model.
-            step_id (int): The current training step.
-            num_samples (int): The number of samples to select.
-
-        Returns:
-            list: A list of indices of the selected samples.
-        """
-        # Example logic: simply return a list of indices from 0 to num_samples-1.
-        # You can implement more complex selection algorithms here.
-        return list(range(num_samples))
-```
-
-### Key Points Explanation:
-
-* `@register_selector('custom')`: This decorator registers your `CustomSelector` class into the DataFlex framework and assigns it a unique name, `custom`. This name will be used in configuration files later.
-* `CustomSelector(Selector)`: Your custom class must inherit from the `Selector` base class provided by the framework.
-* `__init__`: The constructor is used to perform necessary initialization tasks. It calls `super().__init__(...)` to ensure that the base class initialization logic is executed correctly.
-* `select`: This is the core method where you implement your data selection algorithm. You should override this method according to your needs.
-* `warmup` (optional): You can also override the `warmup` method if you need to select data for the warmup phase of training. By default, data is randomly sampled during the warmup phase.
-
-## Step 2: Import the New Module
-
-In order for DataFlex to recognize and load your newly created selector, you need to edit the `__init__.py` file in this directory to expose your new module.
-
-1. **File Path**: `DataFlex-Preview/src/dataflex/train/selector/__init__.py`
-2. **Add Content**: Add the following line at the end of the file to import the `CustomSelector` class.
+Group-based signals (e.g. per-group solve rate) set `needs_groups=True`, which the
+framework validates against the active estimator at mount time.
 
 ```python
-from .custom_selector import *
+import numpy as np, torch
+from .core.registry import register_scorer
+from .core.scorer import Scorer
+
+@register_scorer("group_solve_rate")
+class GroupSolveRateScorer(Scorer):
+    requires = ["rm_scores", "response_mask", "uid"]
+    timing = "post_reward"
+    granularity = "prompt"
+    needs_groups = True                    # rejected on PPO+GAE at startup
+
+    def __init__(self, success_threshold: float = 0.5, **kw):
+        super().__init__(**kw); self.success_threshold = success_threshold
+
+    def score(self, batch, step_id, **ctx):
+        scores = batch.batch["rm_scores"]
+        mask = batch.batch["response_mask"]
+        per_seq = (scores * mask).sum(-1)
+        success = (per_seq > self.success_threshold).float()
+        uid = np.asarray(batch.non_tensor_batch["uid"])
+        out = torch.zeros_like(per_seq)
+        for g in np.unique(uid):            # each sample gets its group's solve rate
+            idx = np.where(uid == g)[0]
+            out[idx] = success[idx].mean()
+        return out
 ```
 
-## Step 3: Configure the Selector Parameters
+## Step 2: Add the Selector
 
-Finally, define your new selector and its parameters in a YAML configuration file so it can be easily called during experiments.
+Return the indices to keep. Dropped samples get zero loss weight.
 
-1. **File Path**: `DataFlex-Preview/src/dataflex/configs/components.yaml`
-2. **Add Configuration**: Under the `selectors` configuration block, add a new entry for your `custom` selector.
+```python
+import torch
+from .core.actuator import Selector
+from .core.registry import register_selector
+
+@register_selector("threshold_band")
+class ThresholdBandSelector(Selector):
+    def __init__(self, low: float = 0.0, high: float = 1.0, **kw):
+        super().__init__(**kw); self.low = low; self.high = high
+
+    def act(self, scores, batch, **ctx) -> list[int]:
+        s = scores.float().flatten()
+        keep = (s > self.low) & (s < self.high)
+        return torch.nonzero(keep, as_tuple=False).flatten().tolist()
+```
+
+## Step 3: Use it
 
 ```yaml
-selectors:
-  ...
-  # Add your custom selector configuration
-  custom:
-    name: custom
-    params:
-      cache_dir: ../dataflex_saves/custom_output
-  ...
+dataflex:
+  mechanism: select
+  scorer:   {name: group_solve_rate, params: {success_threshold: 0.5}}
+  actuator: {name: threshold_band, params: {low: 0.2, high: 0.8}}
 ```
 
-### Key Points Explanation:
+## How it reaches the loss
 
-* `params::` All parameters defined under this block will be passed as keyword arguments to the `__init__` constructor of the `CustomSelector` class. For example, the value of `cache_dir` here will be passed to the `cache_dir` parameter of the `__init__` method.
-
-```
-
-This English version of the tutorial can be used directly for documentation purposes, README files, or other resources where an English version is required.
-```
+In `_compute_advantage`, the trainer converts the kept-index list into a 0/1 per-sample
+mask, broadcasts it to per-token, and writes `rollout_is_weights`. Dropped samples then
+contribute zero to `pg_losses`. Reweight and Select share this hook because both reduce
+to per-token weights.

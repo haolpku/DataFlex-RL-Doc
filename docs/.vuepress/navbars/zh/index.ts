@@ -32,22 +32,34 @@ export const zhNavbar = defineNavbarConfig([
                                 icon: 'material-symbols:auto-transmission-sharp',
                                 activeMatch: '^/guide/'
                             },
+                            {
+                                text: '安装',
+                                link: '/zh/notes/guide/basicinfo/install.md',
+                                icon: 'material-symbols-light:download-rounded',
+                                activeMatch: '^/guide/'
+                            },
                 ]
             },
             {
-                text: '快速开始',
+                text: '机制',
                 items: [
                     {
-                        text: '安装',
-                        link: '/zh/notes/guide/quickstart/install.md',
-                        icon: 'material-symbols-light:download-rounded',
-                        activeMatch: '^/guide/'
+                        text: 'Reweighter(重加权)',
+                        link: '/zh/notes/guide/reweighter/quickstart.md',
+                        icon: 'solar:scale-outline',
+                        activeMatch: '^/guide/reweighter/'
                     },
                     {
-                        text: '快速开始',
-                        link: '/zh/notes/guide/quickstart/quickstart.md',
-                        icon: 'solar:flag-2-broken',
-                        activeMatch: '^/guide/'
+                        text: 'Selector(选择)',
+                        link: '/zh/notes/guide/selector/quickstart.md',
+                        icon: 'solar:filter-outline',
+                        activeMatch: '^/guide/selector/'
+                    },
+                    {
+                        text: 'Mixer(混合)',
+                        link: '/zh/notes/guide/mixer/quickstart.md',
+                        icon: 'solar:shuffle-outline',
+                        activeMatch: '^/guide/mixer/'
                     }
                 ]
             }

@@ -32,22 +32,34 @@ export const enNavbar = defineNavbarConfig([
                         icon: 'material-symbols:auto-transmission-sharp',
                         activeMatch: '^/guide/'
                     },
-                ]
-            },
-            {
-                text: 'Dataflex Selector',
-                items: [
                     {
                         text: 'Installation',
-                        link: '/en/notes/guide/selector/install.md',
+                        link: '/en/notes/guide/basicinfo/install.md',
                         icon: 'material-symbols-light:download-rounded',
                         activeMatch: '^/guide/'
                     },
+                ]
+            },
+            {
+                text: 'Mechanisms',
+                items: [
                     {
-                        text: 'Quick Start',
-                        link: '/en/notes/guide/selector/tutorial.md',
-                        icon: 'solar:flag-2-broken',
-                        activeMatch: '^/guide/'
+                        text: 'Reweighter',
+                        link: '/en/notes/guide/reweighter/quickstart.md',
+                        icon: 'solar:scale-outline',
+                        activeMatch: '^/guide/reweighter/'
+                    },
+                    {
+                        text: 'Selector',
+                        link: '/en/notes/guide/selector/quickstart.md',
+                        icon: 'solar:filter-outline',
+                        activeMatch: '^/guide/selector/'
+                    },
+                    {
+                        text: 'Mixer',
+                        link: '/en/notes/guide/mixer/quickstart.md',
+                        icon: 'solar:shuffle-outline',
+                        activeMatch: '^/guide/mixer/'
                     }
                 ]
             }

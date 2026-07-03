@@ -7,9 +7,9 @@ config:
     full: true
     background: tint-plate
     hero:
-      name: DataFlex
-      tagline: Data Centric AI Training System
-      text: Better Data, Better Results
+      name: DataFlex-RL
+      tagline: Data Scheduling for RL Fine-tuning
+      text: Select · Mix · Reweight — a zero-fork verl plugin
       actions:
         -
           theme: brand
@@ -17,9 +17,9 @@ config:
           link: /en/notes/guide/basicinfo/intro.md
         -
           theme: brand
-          text: Quick Start
-          link: /en/notes/guide/quickstart/install.md
+          text: Framework Design
+          link: /en/notes/guide/basicinfo/framework.md
         -
           theme: alt
           text: Github →
-          link: https://github.com/OpenDCAI/DataFlex-Preview
+          link: https://github.com/haolpku/DataFlex-RL

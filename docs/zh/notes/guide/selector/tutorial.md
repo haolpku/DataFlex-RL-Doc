@@ -1,105 +1,77 @@
 ---
-title: 向Dataflex添加Selector
-createTime: 2025/06/30 19:19:16
-permalink: /zh/guide/selector/tutorial/
+title: 添加 Selector
 icon: solar:add-circle-outline
+createTime: 2026/07/03 10:00:00
+permalink: /zh/guide/selector/tutorial/
 ---
 
-# 向Dataflex添加Selector
+# 向 DataFlex-RL 添加 Selector
 
-# 如何在 DataFlex 中添加自定义选择器
+Selector 把分数转成保留索引列表,复用与 Reweighter/Mixer 相同的 Scorer 层。
 
-本文档将以 `custom_selector` 为例，详细介绍如何在 DataFlex 框架中添加并配置一个自定义的数据选择器，实现训练过程中的动态数据点选择。
+## 第 1 步:(可选)添加分组 Scorer
 
-## 步骤一：创建选择器实现文件
-
-首先，在项目指定路径下创建一个新的 Python 文件，用于实现自定义选择器的核心逻辑。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/train/selector/custom_selector.py`
-2. **文件内容**: 在该文件中，定义一个继承自 `dataflex.train.selector.base_selector.Selector` 的新类 `CustomSelector`。
+分组信号(如组解出率)设 `needs_groups=True`,框架在挂载时对当前估计器做校验。
 
 ```python
-from dataflex.core.registry import register_selector
-from .base_selector import logger, Selector
+import numpy as np, torch
+from .core.registry import register_scorer
+from .core.scorer import Scorer
 
-@register_selector('custom')
-class CustomSelector(Selector):
-    """
-    一个自定义数据选择器的示例实现。
-    """
-    def __init__(
-        self,
-        dataset,
-        accelerator,
-        data_collator,
-        cache_dir,
-    ):
-        """
-        构造函数，用于初始化选择器。
-        """
-        super().__init__(dataset, accelerator, data_collator, cache_dir)
-        logger.info(f"CustomSelector initialized.")
+@register_scorer("group_solve_rate")
+class GroupSolveRateScorer(Scorer):
+    requires = ["rm_scores", "response_mask", "uid"]
+    timing = "post_reward"
+    granularity = "prompt"
+    needs_groups = True                    # 在 PPO+GAE 上启动时被拒
 
-    def select(self, model, step_id: int, num_samples: int, **kwargs):
-        """
-        核心选择逻辑。
-        此方法定义了如何从数据集中选择样本。
+    def __init__(self, success_threshold: float = 0.5, **kw):
+        super().__init__(**kw); self.success_threshold = success_threshold
 
-        Args:
-            model: 当前的模型。
-            step_id (int): 当前的训练步数。
-            num_samples (int): 需要选择的样本数量。
-
-        Returns:
-            list: 包含被选中样本索引的列表。
-        """
-        # 示例逻辑：简单返回从 0 到 num_samples-1 的索引列表。
-        # 您可以在此实现更复杂的选择算法。
-        return list(range(num_samples))
+    def score(self, batch, step_id, **ctx):
+        scores = batch.batch["rm_scores"]
+        mask = batch.batch["response_mask"]
+        per_seq = (scores * mask).sum(-1)
+        success = (per_seq > self.success_threshold).float()
+        uid = np.asarray(batch.non_tensor_batch["uid"])
+        out = torch.zeros_like(per_seq)
+        for g in np.unique(uid):            # 每个样本取其所在组的解出率
+            idx = np.where(uid == g)[0]
+            out[idx] = success[idx].mean()
+        return out
 ```
 
-### 关键点说明：
+## 第 2 步:添加 Selector
 
-* `@register_selector('custom')`: 这是一个装饰器，用于将您的 `CustomSelector` 类注册到 DataFlex 框架中，并赋予其一个唯一的名称 `custom`。这个名称将在后续的配置文件中使用。
-* `CustomSelector(Selector)`: 您的自定义类必须继承自框架提供的 `Selector` 基类。
-* `__init__`: 构造函数用于执行必要的初始化操作。调用 `super().__init__(...)` 来确保基类的初始化逻辑被正确执行。
-* `select`: 这是实现数据选择算法的核心方法。您需要根据自己的需求重写此方法。
-* `warmup` (可选): 您还可以根据需要重写 `warmup` 方法，用于选择用于 warmup 的数据。默认随机采样数据用于 warmup 阶段训练。
-
-## 步骤二：导入新模块
-
-为了让 DataFlex 框架能够识别并加载您新创建的选择器，需要编辑该目录下的 `__init__.py` 文件，以暴露您的新模块。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/train/selector/__init__.py`
-2. **添加内容**: 在文件末尾添加以下行，以导入 `CustomSelector` 类。
+返回要保留的索引。被丢弃样本的 loss 权重为零。
 
 ```python
-from .custom_selector import *
+import torch
+from .core.actuator import Selector
+from .core.registry import register_selector
+
+@register_selector("threshold_band")
+class ThresholdBandSelector(Selector):
+    def __init__(self, low: float = 0.0, high: float = 1.0, **kw):
+        super().__init__(**kw); self.low = low; self.high = high
+
+    def act(self, scores, batch, **ctx) -> list[int]:
+        s = scores.float().flatten()
+        keep = (s > self.low) & (s < self.high)
+        return torch.nonzero(keep, as_tuple=False).flatten().tolist()
 ```
 
-## 步骤三：配置选择器参数
-
-最后，在 YAML 配置文件中定义您的新选择器及其参数，以便在实验中方便地调用。
-
-1. **文件路径**: `DataFlex-Preview/src/dataflex/configs/components.yaml`
-2. **添加配置**: 在 `selectors` 配置块下，为您的 `custom` 选择器添加新的条目。
+## 第 3 步:使用
 
 ```yaml
-selectors:
-  ...
-  # 添加您的自定义选择器配置
-  custom:
-    name: custom
-    params:
-      cache_dir: ../dataflex_saves/custom_output
-  ...
+dataflex:
+  mechanism: select
+  scorer:   {name: group_solve_rate, params: {success_threshold: 0.5}}
+  actuator: {name: threshold_band, params: {low: 0.2, high: 0.8}}
 ```
 
-### 关键点说明：
+## 如何抵达 loss
 
-* `params::` 该块下定义的所有参数都将作为关键字参数传递给 `CustomSelector` 类的 `__init__` 构造函数。例如，这里的 `cache_dir` 值会传递给 `__init__` 方法的 `cache_dir` 参数。
-
-```
-
-这个 Markdown 格式的文档可以直接用于文档生成、GitHub README 等场景。
-```
+在 `_compute_advantage` 里,trainer 把保留索引列表转成 0/1 的 per-sample 掩码,广播到
+per-token,写入 `rollout_is_weights`。被丢弃样本对 `pg_losses` 贡献为零。Reweight 和 Select
+共享这个钩子,因为两者都归结为 per-token 权重。

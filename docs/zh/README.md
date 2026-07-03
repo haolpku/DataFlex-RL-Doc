@@ -7,9 +7,9 @@ config:
     full: true
     background: tint-plate
     hero:
-      name: DataFlex
-      tagline: 以数据为中心的AI训练系统
-      text: 好数据，好模型
+      name: DataFlex-RL
+      tagline: 面向强化学习微调的数据调度
+      text: 选择 · 混合 · 重加权 —— 零侵入 verl 插件
       actions:
         -
           theme: brand
@@ -17,10 +17,10 @@ config:
           link: /zh/notes/guide/basicinfo/intro.md
         -
           theme: brand
-          text: 快速开始
-          link: /zh/notes/guide/quickstart/install.md
+          text: 框架设计
+          link: /zh/notes/guide/basicinfo/framework.md
         -
           theme: alt
           text: Github →
-          link: https://github.com/OpenDCAI/DataFlex-Preview
+          link: https://github.com/haolpku/DataFlex-RL
 ---
