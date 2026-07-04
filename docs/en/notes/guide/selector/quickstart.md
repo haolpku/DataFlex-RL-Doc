@@ -58,6 +58,8 @@ the fraction of samples kept after filtering.
 |---|---|---|
 | `threshold_band` | `group_solve_rate` | keep score ∈ (low, high) |
 | `topk_fraction` | `advantage_magnitude` | keep top/bottom fraction |
+| [`gfpo`](../gfpo/) | `reward_difficulty` | per-group top-k by `-L` (short) or `R/L` (efficiency) |
+| [`max_variance`](../pods_maxvar/) | `reward_difficulty` | per-group max-variance subset (PODS) |
 
 **DAPO dynamic sampling** = `group_solve_rate` + `threshold_band(0,1)` (drop all-solved
 / all-failed groups). **Online Difficulty Filtering** = the same with band `(0.2, 0.8)`

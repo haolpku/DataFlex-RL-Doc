@@ -57,5 +57,6 @@ dataflex/weight_mean:1.0   dataflex/weight_std:...
 | `softmax` | 任意 per-sample 分数 | `softmax(score/T)`,强调高分 |
 | `difficulty_band` | per-seq reward | 提升中等难度分位段 |
 | `advantage_reweight` | per-token `token_prob` | `w=α·π_θ+(1−α)`,压低低概率 token(arXiv:2505.12929) |
+| [`per_advantage`](../per_advantage/) | `advantage_magnitude` | `w=|A|^α`,均值归一化(PER) |
 
 见各算法页,以及[添加 Reweighter](../tutorial/) 编写自己的。

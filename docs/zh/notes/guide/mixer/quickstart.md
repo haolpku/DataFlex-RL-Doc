@@ -62,6 +62,7 @@ dataflex/reward_gsm8k_short:... dataflex/reward_gsm8k_long:...
 |---|---|---|
 | `reward_gap` | per-domain 平均 reward | softmax over `max−reward`(偏向落后域) |
 | `dump_ucb` | per-domain 平均 \|advantage\| | UCB + softmax(偏向可学 + 探索) |
+| [`tscl`](../tscl/) | per-domain reward 斜率 | softmax over \|slope\|(偏向学习进度) |
 | `static` | — | 固定配比(基线/warmup) |
 
 ::: tip Mix 什么时候有用?

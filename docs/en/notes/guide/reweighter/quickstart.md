@@ -59,5 +59,6 @@ dataflex/weight_mean:1.0   dataflex/weight_std:...
 | `softmax` | any per-sample score | `softmax(score/T)`, emphasize high-score |
 | `difficulty_band` | per-seq reward | up-weight mid-difficulty quantile band |
 | `advantage_reweight` | per-token `token_prob` | `w=α·π_θ+(1−α)`, damp low-prob tokens (arXiv:2505.12929) |
+| [`per_advantage`](../per_advantage/) | `advantage_magnitude` | `w=|A|^α`, mean-normalized (PER) |
 
 See individual algorithm pages, and [Add a Reweighter](../tutorial/) to write your own.

@@ -66,6 +66,7 @@ proportions stay uniform — expected.
 |---|---|---|
 | `reward_gap` | per-domain mean reward | softmax over `max−reward` (favor lagging) |
 | `dump_ucb` | per-domain mean \|advantage\| | UCB + softmax (favor learnable + explore) |
+| [`tscl`](../tscl/) | per-domain reward slope | softmax over \|slope\| (favor learning progress) |
 | `static` | — | fixed proportions (baseline/warmup) |
 
 ::: tip When does Mix help?

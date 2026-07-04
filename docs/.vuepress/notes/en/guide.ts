@@ -25,6 +25,7 @@ export const Guide: ThemeNote = defineNoteConfig({
                 'quickstart',
                 'tutorial',
                 'advantage_reweight',
+                'per_advantage',
             ],
         },
         {
@@ -36,6 +37,8 @@ export const Guide: ThemeNote = defineNoteConfig({
                 'quickstart',
                 'tutorial',
                 'difficulty_filtering',
+                'gfpo',
+                'pods_maxvar',
             ],
         },
         {
@@ -47,6 +50,7 @@ export const Guide: ThemeNote = defineNoteConfig({
                 'quickstart',
                 'tutorial',
                 'dump_ucb',
+                'tscl',
             ],
         },
     ],

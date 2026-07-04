@@ -56,6 +56,8 @@ dataflex/kept_frac:0.078...
 |---|---|---|
 | `threshold_band` | `group_solve_rate` | 保留分数 ∈ (low, high) |
 | `topk_fraction` | `advantage_magnitude` | 保留 top/bottom 比例 |
+| [`gfpo`](../gfpo/) | `reward_difficulty` | 组内 top-k,按 `-L`(短)或 `R/L`(效率) |
+| [`max_variance`](../pods_maxvar/) | `reward_difficulty` | 组内最大方差子集(PODS) |
 
 **DAPO dynamic sampling** = `group_solve_rate` + `threshold_band(0,1)`(丢掉全对/全错的组)。
 **Online Difficulty Filtering** = 同样但带宽 `(0.2, 0.8)` —— 见其[算法页](../difficulty_filtering/)。
