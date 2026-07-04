@@ -1,45 +1,65 @@
-# DataFlex-Doc
+# DataFlex-RL Documentation
 
-这个是[https://github.com/OpenDCAI/DataFlex](https://github.com/OpenDCAI/DataFlex-Preview)的文档。
+Documentation site for **[DataFlex-RL](https://github.com/haolpku/DataFlex-RL)** —
+data scheduling (Select · Mix · Reweight) for RL fine-tuning of LLMs, a zero-fork
+plugin for [verl](https://github.com/volcengine/verl).
 
+🌐 **Live site: https://haolpku.github.io/DataFlex-RL-Doc/**
 
-## Install
+Bilingual (English / 中文), built with [VuePress](https://vuepress.vuejs.org/) and
+[vuepress-theme-plume](https://theme-plume.vuejs.press/). The structure mirrors
+[OpenDCAI/DataFlex-Doc](https://github.com/OpenDCAI/DataFlex-Doc) (the SFT project's
+docs), re-grounded on the RL framework.
+
+## Contents
+
+| Section | Pages |
+|---|---|
+| **Basic Info** | Introduction · Framework Design (Scorer/Actuator, verl mount points, timing model) · Installation |
+| **Reweighter** | Quick Start · Add a Reweighter · Advantage Reweighting |
+| **Selector** | Quick Start · Add a Selector · Online Difficulty Filtering |
+| **Mixer** | Quick Start · Add a Mixer · DUMP (UCB) |
+
+## Local development
 
 ```sh
-npm i
+npm ci                 # install pinned deps (package-lock.json)
+npm run docs:dev       # dev server with hot reload (preview markdown edits live)
+npm run docs:build     # production build; run before pushing to catch render errors
 ```
 
-## Usage
+Content lives in `docs/en/notes/guide/` and `docs/zh/notes/guide/` (one page per
+`.md`, English + 中文). Site config is under `docs/.vuepress/`:
 
-```sh
-# start dev server 一般用这个，可以动态热渲染所有markdown的修改
-npm run docs:dev
-# build for production 这个主要是上传github之前测试下有无bug，有bug的话github无法渲染page的。
-npm run docs:build
-```
+- **Navbar**: [`docs/.vuepress/navbars/`](./docs/.vuepress/navbars/)
+- **Sidebar**: [`docs/.vuepress/notes/`](./docs/.vuepress/notes/) (grouped by mechanism)
+- **Theme / base / titles**: [`docs/.vuepress/config.ts`](./docs/.vuepress/config.ts) and `plume.config.ts`
 
-## 基本开发结构介绍：
-基本都是一式两份，英语一份，汉语一份。
+Each markdown page starts with frontmatter that drives the sidebar title, icon, and URL:
 
-上方的导航栏配置主要在这个文件夹下：[navbars](./docs/.vuepress/navbars/)
-各个文章的侧边栏主要是在这个文件夹下配置[sidebar](./docs/.vuepress/notes/)，可以手动可以自动，参考模板文档的[Sidebar配置](https://theme-plume.vuejs.press/config/theme/#sidebar)
-
-如果开启了`npm run docs:dev`，在新建markdown的时候，会在markdown头部有一些配置前缀，这里简要介绍下：
 ```yaml
 ---
-title: 框架设计 # 这个标题会用来作为sidebar的标题
-createTime: 2025/06/13 14:59:56 # 不太重要
-icon: material-symbols:deployed-code-outline # 可选，侧边栏展示时的小logo，从这个网址选烧包小logo https://icon-sets.iconify.design/
-permalink: /zh/guide/framework/ # 这个自动生成的是8位码，可以自行修改以简明展示，注意不能和现有的其他md的路径重复。
+title: Framework Design        # sidebar title
+createTime: 2026/07/03 10:00:00
+icon: material-symbols:auto-transmission-sharp   # from https://icon-sets.iconify.design/
+permalink: /en/guide/basicinfo/framework/        # clean URL; must be unique
 ---
 ```
 
-## Documents
+## Deploy (GitHub Pages)
 
-- [vuepress](https://vuepress.vuejs.org/)
-- [vuepress-theme-plume](https://theme-plume.vuejs.press/)
+`.github/workflows/deploy.yml` builds the site and pushes the static output to the
+`gh-pages` branch on every push to `main`. Two one-time repo settings are required:
 
+- **Settings → Actions → General → Workflow permissions**: select **Read and write permissions**, Save.
+- **Settings → Pages → Build and deployment → Source**: select **Deploy from a branch**,
+  Branch **`gh-pages`** `/ (root)`, Save.
 
-## 好用插件：
-- 重定向相关
-npm i -D @vuepress/plugin-redirect@next
+> Do **not** select "GitHub Actions" as the Pages source — this workflow publishes to
+> the `gh-pages` branch, so it must be served via "Deploy from a branch".
+
+## Links
+
+- Main project: https://github.com/haolpku/DataFlex-RL
+- verl: https://github.com/volcengine/verl
+- Original DataFlex (SFT): https://github.com/OpenDCAI/DataFlex

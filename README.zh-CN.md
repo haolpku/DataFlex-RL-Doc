@@ -1,42 +1,62 @@
-# dataflow-doc
+# DataFlex-RL 文档
 
-网站使用 [vuepress](https://vuepress.vuejs.org/) 和 [vuepress-theme-plume](https://github.com/pengzhanbo/vuepress-theme-plume) 构建生成。
+**[DataFlex-RL](https://github.com/haolpku/DataFlex-RL)** 的文档站 —— 面向 LLM 强化学习
+微调的数据调度(选择 · 混合 · 重加权),一个零侵入的 [verl](https://github.com/volcengine/verl) 插件。
 
-## Install
+🌐 **在线站点:https://haolpku.github.io/DataFlex-RL-Doc/**
+
+双语(English / 中文),基于 [VuePress](https://vuepress.vuejs.org/) +
+[vuepress-theme-plume](https://theme-plume.vuejs.press/) 构建,结构沿用
+[OpenDCAI/DataFlex-Doc](https://github.com/OpenDCAI/DataFlex-Doc)(SFT 项目的文档),
+重新落在 RL 框架上。
+
+## 内容
+
+| 章节 | 页面 |
+|---|---|
+| **基础信息** | 简介 · 框架设计(Scorer/Actuator、verl 挂载点、时序模型)· 安装 |
+| **Reweighter** | 快速开始 · 添加 Reweighter · Advantage Reweighting |
+| **Selector** | 快速开始 · 添加 Selector · Online Difficulty Filtering |
+| **Mixer** | 快速开始 · 添加 Mixer · DUMP(UCB) |
+
+## 本地开发
 
 ```sh
-npm i
+npm ci                 # 按 package-lock.json 安装锁定依赖
+npm run docs:dev       # 开发服务器,热更新预览 markdown 修改
+npm run docs:build     # 生产构建;推送前跑一次,提前发现渲染错误
 ```
 
-## Usage
+内容在 `docs/en/notes/guide/` 和 `docs/zh/notes/guide/`(每个 `.md` 一页,中英各一份)。
+站点配置在 `docs/.vuepress/`:导航栏 [`navbars/`](./docs/.vuepress/navbars/)、侧边栏
+[`notes/`](./docs/.vuepress/notes/)(按机制分组)、主题/base/标题在
+[`config.ts`](./docs/.vuepress/config.ts) 和 `plume.config.ts`。
 
-```sh
-# 启动开发服务
-npm run docs:dev
-# 构建生产包
-npm run docs:build
-# 本地预览生产服务
-npm run docs:preview
-# 更新 vuepress 和主题
-npm run vp-update
+每个 markdown 头部的 frontmatter 决定侧边栏标题、图标和 URL:
+
+```yaml
+---
+title: 框架设计                  # 侧边栏标题
+createTime: 2026/07/03 10:00:00
+icon: material-symbols:auto-transmission-sharp   # 图标从 https://icon-sets.iconify.design/ 选
+permalink: /zh/guide/basicinfo/framework/        # 简洁 URL,须唯一
+---
 ```
 
 ## 部署到 GitHub Pages
 
-主题已创建 github actions: `.github/workflows/docs-deploy.yml`，你还需要在 github 仓库中进行以下设置：
+`.github/workflows/deploy.yml` 会在每次 push 到 `main` 时构建并把静态产物推到
+`gh-pages` 分支。需要在仓库里做两处一次性设置:
 
-- [ ] `settings > Actions > General`，拉到页面底部，在 `Workflow permissions` 下，勾选 `Read and write permissions`，并点击保存按钮
+- **Settings → Actions → General → Workflow permissions**:勾选 **Read and write permissions**,保存。
+- **Settings → Pages → Build and deployment → Source**:选 **Deploy from a branch**,
+  分支 **`gh-pages`** `/ (root)`,保存。
 
-- [ ] `settings > Pages`, 在 `Build and deployment` 中，`Source` 选择 `Deploy from a branch`, `Branch` 选择 `gh-pages`，并点击保存按钮
-  (首次创建可能没有 `gh-pages`分支，你可以先完成上面的设置后，推送一次代码到主分支，等待 `github actions` 完成后再进行设置)
+> 不要把 Pages 的 Source 选成 "GitHub Actions" —— 本 workflow 发布到 `gh-pages` 分支,
+> 必须用 "Deploy from a branch" 来服务。
 
-- [ ] 修改 `docs/.vuepress/config.ts` 中的 `base` 选项：
-  - 如果你准备发布到 `https://<USERNAME>.github.io/` ，你可以省略这一步，因为 `base` 默认就是 `"/"` 。
-  - 如果你准备发布到 `https://<USERNAME>.github.io/<REPO>/` ，也就是说你的仓库地址是 `https://github.com/<USERNAME>/<REPO>` ，则将 `base` 设置为 `"/<REPO>/"`。
+## 相关链接
 
-如需要自定义域名，请查看 [Github Pages 文档](https://docs.github.com/zh/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages)
-
-## 文档
-
-- [vuepress](https://vuepress.vuejs.org/)
-- [vuepress-theme-plume](https://theme-plume.vuejs.press/)
+- 主项目:https://github.com/haolpku/DataFlex-RL
+- verl:https://github.com/volcengine/verl
+- 原始 DataFlex(SFT):https://github.com/OpenDCAI/DataFlex
