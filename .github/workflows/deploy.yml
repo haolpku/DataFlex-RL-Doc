@@ -53,3 +53,53 @@ jobs:
         env:
           # @see https://docs.github.com/cn/actions/reference/authentication-in-a-workflow#about-the-github_token-secret
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 部署后自测：等 GitHub Pages 原生部署完成后，抓取线上关键页面确认返回 200。
+  # Post-deploy smoke test: after gh-pages is published, fetch key live URLs
+  # (including newly added algorithm pages) and assert HTTP 200.
+  smoke-test:
+    needs: docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify live pages return 200
+        run: |
+          BASE="https://haolpku.github.io/DataFlex-RL-Doc"
+          # 待自测的页面：首页 + 各机制新算法页(中英)
+          PAGES=(
+            "/"
+            "/en/guide/selector/gfpo/"
+            "/en/guide/selector/pods_maxvar/"
+            "/en/guide/reweighter/per_advantage/"
+            "/en/guide/mixer/tscl/"
+            "/zh/guide/selector/gfpo/"
+            "/zh/guide/mixer/tscl/"
+          )
+          # GitHub Pages 原生部署在 gh-pages 更新后异步进行，先等再轮询。
+          echo "Waiting 60s for GitHub Pages to publish the new gh-pages commit..."
+          sleep 60
+
+          fail=0
+          for path in "${PAGES[@]}"; do
+            url="${BASE}${path}"
+            code=""
+            # 每个页面最多重试 10 次(每次间隔 30s，覆盖 ~5min 部署窗口)
+            for attempt in $(seq 1 10); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' -L "$url")
+              if [ "$code" = "200" ]; then
+                echo "OK   ($code) $url"
+                break
+              fi
+              echo "wait ($code) attempt $attempt/10 $url"
+              sleep 30
+            done
+            if [ "$code" != "200" ]; then
+              echo "FAIL ($code) $url"
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::One or more pages did not return 200 after deploy."
+            exit 1
+          fi
+          echo "All pages returned 200."
