@@ -35,8 +35,9 @@ DataFlex-RL 里每个数据调度方法都可拆成:**一个信号**(按 token /
 ## 按信号轴归类
 
 - **reward 水平 / pass-rate** — `difficulty_filtering`、`pods_maxvar`、`difficulty_band`、
-  `reward_gap`、`tscl`(用斜率)、`threshold_band`。
+  `reward_gap`、`threshold_band`。
 - **|advantage|** — `topk_fraction`、`per_advantage`、`softmax`(此处用法)、`dump_ucb`。
+- **reward 斜率 / 学习进度**(变化率,与 reward *水平*不同的轴) — `tscl`。
 - **token 概率** — `advantage_reweight`。
 - **长度 / token 效率** — `gfpo`。
 

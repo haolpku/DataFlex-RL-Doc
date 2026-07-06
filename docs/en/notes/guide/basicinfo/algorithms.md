@@ -36,8 +36,9 @@ each algorithm keys on** and **where it comes from**.
 ## Signals grouped by axis
 
 - **Reward level / pass-rate** — `difficulty_filtering`, `pods_maxvar`, `difficulty_band`,
-  `reward_gap`, `tscl` (its slope), `threshold_band`.
+  `reward_gap`, `threshold_band`.
 - **|advantage|** — `topk_fraction`, `per_advantage`, `softmax` (as used), `dump_ucb`.
+- **Reward slope / learning progress** (rate of change, a distinct axis from reward *level*) — `tscl`.
 - **Token probability** — `advantage_reweight`.
 - **Length / token-efficiency** — `gfpo`.
 

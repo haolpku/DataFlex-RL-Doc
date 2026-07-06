@@ -23,10 +23,12 @@ informative.
 Keep prompt *x* iff its batch-estimated pass-rate satisfies:
 
 $$
-T_\text{low} \le p(x) \le T_\text{high}
+T_\text{low} < p(x) < T_\text{high}
 $$
 
-with e.g. `T_low = 0.2, T_high = 0.8`. This **generalizes DAPO dynamic sampling**,
+with e.g. `T_low = 0.2, T_high = 0.8`. The band is **open** (strict inequalities, matching
+`ThresholdBandSelector`: `keep = (s > low) & (s < high)`), so a group whose pass-rate is
+*exactly* `T_low` or `T_high` is dropped. This **generalizes DAPO dynamic sampling**,
 which is the degenerate band `(0, 1)` that only excludes exactly-0 and exactly-1.
 
 ## In DataFlex-RL
@@ -56,7 +58,7 @@ it with harder / more varied data (e.g. dapo-math).
 | Property | Value |
 |---|---|
 | Signal | per-group pass-rate (from `rm_scores` + `uid`) |
-| Rule | keep pass-rate ∈ [0.2, 0.8] |
+| Rule | keep pass-rate ∈ (0.2, 0.8) |
 | Granularity | prompt (group) |
 | Needs groups | yes (GRPO/RLOO/…) |
 | Extra forward pass | no |
